@@ -22,6 +22,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "gpio_driver.h"
+#include "uart_driver.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -88,10 +89,12 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_USART2_UART_Init();
+  // MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
   gpio_init_output(GPIOA, 5);
+  uart2_init();
+  uart2_write_string("HELLO STM32!\r\n");
 
   /* USER CODE END 2 */
 
