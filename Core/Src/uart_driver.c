@@ -22,6 +22,14 @@ void uart2_init(void)
     GPIOA->AFR[0] &= ~(0xFU << (4U * 2U));
     GPIOA->AFR[0] |=  (7U << (4U * 2U));
 
+    // PA3: Alternate Function mode
+    GPIOA->MODER &= ~(3U << (2U * 3U));
+    GPIOA->MODER |=  (2U << (2U * 3U));
+
+    // PA3: AF7 = USART2_RX
+    GPIOA->AFR[0] &= ~(0xFU << (4U * 3U));
+    GPIOA->AFR[0] |=  (7U << (4U * 3U));
+
     // Enable USART2 clock
     RCC->APB1ENR |= (1U << 17U);
     (void)RCC->APB1ENR;
@@ -30,8 +38,8 @@ void uart2_init(void)
     // Oversampling by 16
     USART2->BRR = 365U;
 
-    // Enable transmitter and USART
-    USART2->CR1 |= (1U << 3U) | (1U << 13U);
+    // USART2 enable + transmitter + receiver
+    USART2->CR1 |= (1U << 13U) | (1U << 3U) | (1U << 2U);
 }
 
 void uart2_write_char(char c)
@@ -56,4 +64,14 @@ void uart2_write_string(const char *str)
         uart2_write_char(*str);
         str++;
     }
+}
+
+char uart2_read_char(void)
+{
+    while ((USART2->SR & (1U << 5U)) == 0U)
+    {
+        // Wait for RXNE
+    }
+
+    return (char)(USART2->DR & 0xFFU);
 }

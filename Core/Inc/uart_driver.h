@@ -13,5 +13,6 @@
 void uart2_init(void);
 void uart2_write_char(char c);
 void uart2_write_string(const char *str);
+char uart2_read_char(void);
 
 #endif /* INC_UART_DRIVER_H_ */

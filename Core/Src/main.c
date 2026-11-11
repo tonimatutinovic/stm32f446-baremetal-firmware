@@ -94,7 +94,7 @@ int main(void)
 
   gpio_init_output(GPIOA, 5);
   uart2_init();
-  uart2_write_string("HELLO STM32!\r\n");
+  uart2_write_string("UART echo ready!\r\n");
 
   /* USER CODE END 2 */
 
@@ -106,6 +106,10 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
+	  char c = uart2_read_char();
+	  uart2_write_char(c);
+
+	  /*
 	  gpio_write_pins(GPIOA, (1U << 5), 0U);
 
 	      for (volatile uint32_t i = 0; i < 500000U; i++)
@@ -117,6 +121,7 @@ int main(void)
 	      for (volatile uint32_t i = 0; i < 500000U; i++)
 	      {
 	      }
+	      */
   }
   /* USER CODE END 3 */
 }
