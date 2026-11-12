@@ -94,8 +94,8 @@ int main(void)
 
   gpio_init_output(GPIOA, 5);
   uart2_init();
-  uart2_write_string("UART echo ready!\r\n");
 
+  uart2_write_string("UART ring buffer ready!\r\n");
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -106,8 +106,12 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-	  char c = uart2_read_char();
-	  uart2_write_char(c);
+	  char c;
+
+	  if (uart2_read_available(&c) == 1U)
+	  {
+		  uart2_write_char(c);
+	  }
 
 	  /*
 	  gpio_write_pins(GPIOA, (1U << 5), 0U);
