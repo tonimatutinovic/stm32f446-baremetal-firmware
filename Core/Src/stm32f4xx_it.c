@@ -21,6 +21,8 @@
 #include "main.h"
 #include "stm32f4xx_it.h"
 #include "uart_driver.h"
+#include "gpio_driver.h"
+#include "timer_driver.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 /* USER CODE END Includes */
@@ -203,5 +205,10 @@ void SysTick_Handler(void)
 void USART2_IRQHandler(void)
 {
     uart2_irq_handler();
+}
+
+void TIM2_IRQHandler(void)
+{
+	tim2_irq_handler();
 }
 /* USER CODE END 1 */

@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include "gpio_driver.h"
 #include "uart_driver.h"
+#include "timer_driver.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -95,7 +96,9 @@ int main(void)
   gpio_init_output(GPIOA, 5);
   uart2_init();
 
-  uart2_write_string("UART ring buffer ready!\r\n");
+  tim2_init();
+
+  uart2_write_string("UART + TIM2 ready!\r\n");
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -108,24 +111,17 @@ int main(void)
 
 	  char c;
 
+	  // Handle UART received bytes
 	  if (uart2_read_available(&c) == 1U)
 	  {
 		  uart2_write_char(c);
 	  }
 
-	  /*
-	  gpio_write_pins(GPIOA, (1U << 5), 0U);
-
-	      for (volatile uint32_t i = 0; i < 500000U; i++)
-	      {
-	      }
-
-	      gpio_write_pins(GPIOA, 0U, (1U << 5));
-
-	      for (volatile uint32_t i = 0; i < 500000U; i++)
-	      {
-	      }
-	      */
+	  // Handle timer events
+	  if (tim2_take_tick() == 1U)
+	  {
+		  gpio_toggle_pin(GPIOA, 5);
+	  }
   }
   /* USER CODE END 3 */
 }
