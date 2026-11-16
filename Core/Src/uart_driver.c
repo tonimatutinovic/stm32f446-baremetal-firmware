@@ -14,6 +14,7 @@ static volatile uint8_t rx_buffer[UART_RX_BUFFER_SIZE];
 static volatile uint8_t rx_head = 0U;
 static volatile uint8_t rx_tail = 0U;
 static volatile uint32_t rx_overflow_count = 0U;
+static volatile uint32_t rx_overrun_count = 0U;
 
 void uart2_init(void)
 {
@@ -50,6 +51,8 @@ void uart2_init(void)
 
     // RXNEIE
     USART2->CR1 |= (1U << 5U);
+
+    NVIC_SetPriority(USART2_IRQn, 1U);
     NVIC_EnableIRQ(USART2_IRQn);
 }
 
@@ -89,21 +92,31 @@ char uart2_read_char(void)
 
 void uart2_irq_handler(void)
 {
-    if ((USART2->SR & (1U << 5U)) != 0U)
+    uint32_t status = USART2->SR;
+
+    if ((status & ((1U << 5U) | (1U << 3U))) != 0U)
     {
         uint8_t received_byte = (uint8_t)(USART2->DR & 0xFFU);
 
-        uint8_t next_head =
-            (rx_head + 1U) % UART_RX_BUFFER_SIZE;
-
-        if (next_head != rx_tail)
+        if ((status & (1U << 3U)) != 0U)
         {
-            rx_buffer[rx_head] = received_byte;
-            rx_head = next_head;
+            rx_overrun_count++;
         }
-        else
+
+        if ((status & (1U << 5U)) != 0U)
         {
-            rx_overflow_count++;
+            uint8_t next_head =
+                (rx_head + 1U) % UART_RX_BUFFER_SIZE;
+
+            if (next_head != rx_tail)
+            {
+                rx_buffer[rx_head] = received_byte;
+                rx_head = next_head;
+            }
+            else
+            {
+                rx_overflow_count++;
+            }
         }
     }
 }
@@ -137,6 +150,19 @@ uint32_t uart2_get_overflow_count(void)
     NVIC_DisableIRQ(USART2_IRQn);
 
     uint32_t count = rx_overflow_count;
+
+    NVIC_EnableIRQ(USART2_IRQn);
+
+    return count;
+}
+
+uint32_t uart2_get_overrun_count(void)
+{
+    uint32_t count;
+
+    NVIC_DisableIRQ(USART2_IRQn);
+
+    count = rx_overrun_count;
 
     NVIC_EnableIRQ(USART2_IRQn);
 

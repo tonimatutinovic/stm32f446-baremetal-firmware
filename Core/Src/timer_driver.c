@@ -30,6 +30,7 @@ void tim2_init(void)
 	TIM2->DIER |= (1U << 0U);
 
 	// 6. Enable TIM2 interrupt in NVIC
+	NVIC_SetPriority(TIM2_IRQn, 2U);
 	NVIC_EnableIRQ(TIM2_IRQn);
 
 	// 7. Start timer
