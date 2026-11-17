@@ -23,6 +23,8 @@
 #include "uart_driver.h"
 #include "gpio_driver.h"
 #include "timer_driver.h"
+#include "exti_driver.h"
+#include "systick_driver.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 /* USER CODE END Includes */
@@ -190,7 +192,7 @@ void SysTick_Handler(void)
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
   /* USER CODE BEGIN SysTick_IRQn 1 */
-
+  systick_tick_handler();
   /* USER CODE END SysTick_IRQn 1 */
 }
 
@@ -210,5 +212,10 @@ void USART2_IRQHandler(void)
 void TIM2_IRQHandler(void)
 {
 	tim2_irq_handler();
+}
+
+void EXTI15_10_IRQHandler(void)
+{
+    exti13_irq_handler();
 }
 /* USER CODE END 1 */

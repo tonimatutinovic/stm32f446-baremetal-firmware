@@ -24,6 +24,8 @@
 #include "gpio_driver.h"
 #include "uart_driver.h"
 #include "timer_driver.h"
+#include "exti_driver.h"
+#include "systick_driver.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -94,11 +96,15 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   gpio_init_output(GPIOA, 5);
-  uart2_init();
 
+  uart2_init();
   tim2_init();
 
   uart2_write_string("UART + TIM2 ready!\r\n");
+
+  exti13_init();
+
+  uart2_write_string("EXTI13 ready!\r\n");
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -121,6 +127,20 @@ int main(void)
 	  if (tim2_take_tick() == 1U)
 	  {
 		  gpio_toggle_pin(GPIOA, 5);
+	  }
+
+	  if (exti13_take_press())
+	  {
+	      uart2_write_string("Button pressed!\r\n");
+	  }
+
+	  static uint32_t last_print = 0U;
+
+	  uint32_t now = systick_get_ms();
+
+	  if ((uint32_t)(now - last_print) >= 1000U)
+	  {
+	      last_print = now;
 	  }
   }
   /* USER CODE END 3 */
