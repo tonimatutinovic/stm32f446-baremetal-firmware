@@ -175,7 +175,7 @@ uint32_t uart2_get_overflow_count(void)
 
 uint32_t uart2_get_overrun_count(void)
 {
-    return rx_overrun_count;;
+    return rx_overrun_count;
 }
 
 uint32_t uart2_write(const uint8_t *data, uint32_t length)
@@ -223,4 +223,23 @@ uint32_t uart2_write(const uint8_t *data, uint32_t length)
 uint32_t uart2_get_tx_overflow_count(void)
 {
     return tx_overflow_count;
+}
+
+uint8_t uart2_tx_is_empty(void)
+{
+	uint8_t result = 0U;
+
+	uint32_t was_enabled = NVIC_GetEnableIRQ(USART2_IRQn);
+	NVIC_DisableIRQ(USART2_IRQn);
+
+	if(tx_head == tx_tail){
+		result = 1U;
+	}
+
+	if (was_enabled)
+	{
+		NVIC_EnableIRQ(USART2_IRQn);
+	}
+
+	return result;
 }

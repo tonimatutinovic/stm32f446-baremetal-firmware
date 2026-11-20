@@ -20,5 +20,6 @@ uint32_t uart2_get_overflow_count(void);
 uint32_t uart2_get_overrun_count(void);
 uint32_t uart2_write(const uint8_t *data, uint32_t length);
 uint32_t uart2_get_tx_overflow_count(void);
+uint8_t uart2_tx_is_empty(void);
 
 #endif /* INC_UART_DRIVER_H_ */

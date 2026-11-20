@@ -26,6 +26,7 @@
 #include "timer_driver.h"
 #include "exti_driver.h"
 #include "systick_driver.h"
+#include<string.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -96,15 +97,14 @@ int main(void)
   /* USER CODE BEGIN 2 */
 
   gpio_init_output(GPIOA, 5);
-
   uart2_init();
   tim2_init();
-
-  uart2_write_string("UART + TIM2 ready!\r\n");
-
   exti13_init();
 
-  uart2_write_string("EXTI13 ready!\r\n");
+  char command[8];
+  int index = 0;
+  char c;
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -115,20 +115,53 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-	  char c;
-
 	  // Handle UART received bytes
 	  if (uart2_read_available(&c) == 1U)
 	  {
+
+		  if(c == '\r' || c == '\n')
+		  {
+			  command[index] = '\0';
+			  if(index > 0U){
+				  if(strcmp(command, "LED ON") == 0)
+				  {
+					  gpio_set_pin(GPIOA, 5);
+					  uart2_write_string("\r\nLED turned ON\r\n");
+				  }
+				  else if(strcmp(command, "LED OFF") == 0)
+				  {
+					  gpio_reset_pin(GPIOA, 5);
+					  uart2_write_string("\r\nLED turned OFF\r\n");
+				  }
+				  else if (strcmp(command, "STATUS") == 0)
+				  {
+					  if (gpio_read_output(GPIOA, 5) == 1U)
+					  {
+						  uart2_write_string("\r\nLED is ON\r\n");
+					  }
+					  else
+					  {
+						  uart2_write_string("\r\nLED is OFF\r\n");
+					  }
+				  }
+				  else
+				  {
+					  uart2_write_string("\r\nUnknown command!\r\n");
+				  }
+			  }
+
+			  index = 0;
+		  }
+		  else if(index < sizeof(command) - 1U)
+		  {
+			  command[index] = c;
+			  index++;
+		  }
+
 		  uart2_write_char(c);
 	  }
 
-	  // Handle timer events
-	  if (tim2_take_tick() == 1U)
-	  {
-		  gpio_toggle_pin(GPIOA, 5);
-	  }
-
+	  // EXTI - button press
 	  if (exti13_take_press())
 	  {
 	      uart2_write_string("Button pressed!\r\n");

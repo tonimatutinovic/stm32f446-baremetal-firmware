@@ -16,5 +16,6 @@ void gpio_set_pin(GPIO_TypeDef *port, uint8_t pin);
 void gpio_reset_pin(GPIO_TypeDef *port, uint8_t pin);
 void gpio_toggle_pin(GPIO_TypeDef *port, uint8_t pin);
 void gpio_write_pins(GPIO_TypeDef *port, uint16_t set_mask, uint16_t reset_mask);
+uint8_t gpio_read_output(GPIO_TypeDef *port, uint8_t pin);
 
 #endif /* INC_GPIO_DRIVER_H_ */

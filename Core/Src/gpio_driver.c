@@ -73,9 +73,9 @@ void gpio_reset_pin(GPIO_TypeDef *port, uint8_t pin)
 
 void gpio_toggle_pin(GPIO_TypeDef *port, uint8_t pin){
 	if (port == 0 || pin > 15U)
-	    {
-	        return;
-	    }
+	{
+		return;
+	}
 	if (port->ODR & (1U << pin))
 	{
 	    gpio_reset_pin(port, pin);
@@ -94,4 +94,14 @@ void gpio_write_pins(GPIO_TypeDef *port, uint16_t set_mask, uint16_t reset_mask)
     }
 
     port->BSRR = (uint32_t)set_mask | ((uint32_t)reset_mask << 16U);
+}
+
+uint8_t gpio_read_output(GPIO_TypeDef *port, uint8_t pin)
+{
+	if (port == 0 || pin > 15U)
+	{
+		return;
+	}
+
+	return (port->ODR & (1U << pin)) != 0U;
 }
