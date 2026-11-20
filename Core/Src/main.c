@@ -133,15 +133,6 @@ int main(void)
 	  {
 	      uart2_write_string("Button pressed!\r\n");
 	  }
-
-	  static uint32_t last_print = 0U;
-
-	  uint32_t now = systick_get_ms();
-
-	  if ((uint32_t)(now - last_print) >= 1000U)
-	  {
-	      last_print = now;
-	  }
   }
   /* USER CODE END 3 */
 }

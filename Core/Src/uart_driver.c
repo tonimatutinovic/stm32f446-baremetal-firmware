@@ -7,6 +7,7 @@
 
 #include "uart_driver.h"
 #include "stm32f446xx.h"
+#include <stddef.h>
 
 #define UART_RX_BUFFER_SIZE 8U
 
@@ -15,6 +16,13 @@ static volatile uint8_t rx_head = 0U;
 static volatile uint8_t rx_tail = 0U;
 static volatile uint32_t rx_overflow_count = 0U;
 static volatile uint32_t rx_overrun_count = 0U;
+
+#define UART_TX_BUFFER_SIZE 128U
+
+static volatile uint8_t tx_buffer[UART_TX_BUFFER_SIZE];
+static volatile uint16_t tx_head = 0U;
+static volatile uint16_t tx_tail = 0U;
+static volatile uint32_t tx_overflow_count = 0U;
 
 void uart2_init(void)
 {
@@ -58,26 +66,24 @@ void uart2_init(void)
 
 void uart2_write_char(char c)
 {
-    while ((USART2->SR & (1U << 7U)) == 0U)
-    {
-        // Wait until transmit data register is empty
-    }
-
-    USART2->DR = (uint8_t)c;
+    uart2_write((const uint8_t *)&c, 1U);
 }
 
-void uart2_write_string(const char *str)
+uint32_t uart2_write_string(const char *str)
 {
-    if (str == 0)
+    if (str == NULL)
     {
-        return;
+        return 0U;
     }
 
-    while (*str != '\0')
+    uint32_t length = 0U;
+
+    while (str[length] != '\0')
     {
-        uart2_write_char(*str);
-        str++;
+        length++;
     }
+
+    return uart2_write((const uint8_t *)str, length);
 }
 
 char uart2_read_char(void)
@@ -119,52 +125,102 @@ void uart2_irq_handler(void)
             }
         }
     }
+
+    if (((USART2->SR & (1U << 7U)) != 0U) &&
+        ((USART2->CR1 & (1U << 7U)) != 0U))
+    {
+        if (tx_head != tx_tail)
+        {
+            USART2->DR = tx_buffer[tx_tail];
+            tx_tail = (tx_tail + 1U) % UART_TX_BUFFER_SIZE;
+        }
+        else
+        {
+            USART2->CR1 &= ~(1U << 7U);
+        }
+    }
 }
 
 uint8_t uart2_read_available(char *c)
 {
-    if (c == 0)
+    if (c == NULL)
     {
         return 0U;
     }
 
+    uint32_t was_enabled = NVIC_GetEnableIRQ(USART2_IRQn);
     NVIC_DisableIRQ(USART2_IRQn);
 
-    if (rx_head == rx_tail)
+    uint8_t available = 0U;
+
+    if (rx_head != rx_tail)
     {
-        NVIC_EnableIRQ(USART2_IRQn);
-        return 0U;
+        *c = (char)rx_buffer[rx_tail];
+        rx_tail = (rx_tail + 1U) % UART_RX_BUFFER_SIZE;
+        available = 1U;
     }
 
-    *c = (char)rx_buffer[rx_tail];
+    if (was_enabled)
+    {
+        NVIC_EnableIRQ(USART2_IRQn);
+    }
 
-    rx_tail = (rx_tail + 1U) % UART_RX_BUFFER_SIZE;
-
-    NVIC_EnableIRQ(USART2_IRQn);
-
-    return 1U;
+    return available;
 }
 
 uint32_t uart2_get_overflow_count(void)
 {
-    NVIC_DisableIRQ(USART2_IRQn);
-
-    uint32_t count = rx_overflow_count;
-
-    NVIC_EnableIRQ(USART2_IRQn);
-
-    return count;
+    return rx_overflow_count;;
 }
 
 uint32_t uart2_get_overrun_count(void)
 {
-    uint32_t count;
+    return rx_overrun_count;;
+}
+
+uint32_t uart2_write(const uint8_t *data, uint32_t length)
+{
+    if (data == NULL || length == 0U)
+    {
+        return 0U;
+    }
+
+    uint32_t was_enabled = NVIC_GetEnableIRQ(USART2_IRQn);
 
     NVIC_DisableIRQ(USART2_IRQn);
 
-    count = rx_overrun_count;
+    uint32_t written = 0U;
 
-    NVIC_EnableIRQ(USART2_IRQn);
+    for (uint32_t i = 0U; i < length; i++)
+    {
+        uint16_t next_head = (tx_head + 1U) % UART_TX_BUFFER_SIZE;
 
-    return count;
+        if (next_head == tx_tail)
+        {
+            break;
+        }
+
+        tx_buffer[tx_head] = data[i];
+        tx_head = next_head;
+        written++;
+    }
+
+    tx_overflow_count += length - written;
+
+    if (written > 0U)
+    {
+        USART2->CR1 |= (1U << 7U);
+    }
+
+    if (was_enabled)
+    {
+        NVIC_EnableIRQ(USART2_IRQn);
+    }
+
+    return written;
+}
+
+uint32_t uart2_get_tx_overflow_count(void)
+{
+    return tx_overflow_count;
 }
