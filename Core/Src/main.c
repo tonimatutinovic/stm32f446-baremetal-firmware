@@ -61,7 +61,19 @@ static void MX_USART2_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+typedef enum
+  {
+	  LED_MODE_ON,
+	  LED_MODE_OFF,
+	  LED_MODE_BLINK
+  }LedMode;
 
+  typedef struct
+  {
+	  LedMode mode;
+	  uint32_t period_ms;
+	  uint32_t last_toggle_ms;
+  }LedState;
 /* USER CODE END 0 */
 
 /**
@@ -101,9 +113,11 @@ int main(void)
   tim2_init();
   exti13_init();
 
-  char command[8];
+  char command[16];
   int index = 0;
   char c;
+
+  LedState led = {.mode = LED_MODE_OFF, .period_ms = 500U, .last_toggle_ms = 0U};
 
   /* USER CODE END 2 */
 
@@ -115,6 +129,15 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
+	  if(led.mode == LED_MODE_BLINK)
+	  {
+		  uint32_t now = tim2_get_ms();
+		  if((now - led.last_toggle_ms) >= led.period_ms){
+			  gpio_toggle_pin(GPIOA, 5);
+			  led.last_toggle_ms = now;
+		  }
+	  }
+
 	  // Handle UART received bytes
 	  if (uart2_read_available(&c) == 1U)
 	  {
@@ -125,24 +148,44 @@ int main(void)
 			  if(index > 0U){
 				  if(strcmp(command, "LED ON") == 0)
 				  {
+					  led.mode = LED_MODE_ON;
 					  gpio_set_pin(GPIOA, 5);
 					  uart2_write_string("\r\nLED turned ON\r\n");
 				  }
 				  else if(strcmp(command, "LED OFF") == 0)
 				  {
+					  led.mode = LED_MODE_OFF;
 					  gpio_reset_pin(GPIOA, 5);
 					  uart2_write_string("\r\nLED turned OFF\r\n");
 				  }
 				  else if (strcmp(command, "STATUS") == 0)
 				  {
-					  if (gpio_read_output(GPIOA, 5) == 1U)
+					  if (led.mode == LED_MODE_ON)
 					  {
 						  uart2_write_string("\r\nLED is ON\r\n");
 					  }
-					  else
+					  else if (led.mode == LED_MODE_OFF)
 					  {
 						  uart2_write_string("\r\nLED is OFF\r\n");
 					  }
+					  else
+					  {
+						  uart2_write_string("\r\nLED is BLINKING\r\n");
+					  }
+				  }
+				  else if(strcmp(command, "BLINK 500") == 0)
+				  {
+					  led.mode = LED_MODE_BLINK;
+					  led.period_ms = 500U;
+					  led.last_toggle_ms = tim2_get_ms();
+					  uart2_write_string("\r\nBlinking every 500 ms\r\n");
+				  }
+				  else if(strcmp(command, "BLINK 1000") == 0)
+				  {
+					  led.mode = LED_MODE_BLINK;
+					  led.period_ms = 1000U;
+					  led.last_toggle_ms = tim2_get_ms();
+					  uart2_write_string("\r\nBlinking every 1000 ms\r\n");
 				  }
 				  else
 				  {

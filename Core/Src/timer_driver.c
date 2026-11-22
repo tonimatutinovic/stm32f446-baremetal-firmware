@@ -10,15 +10,16 @@
 #include "gpio_driver.h"
 
 static volatile uint32_t tim2_pending_ticks = 0U;
+static volatile uint32_t system_ms = 0U;
 
 void tim2_init(void)
 {
     // Enable TIM2 peripheral clock
     RCC->APB1ENR |= (1U << 0U);
 
-    // 2. Configure 500 ms period
+    // 2. Configure 1 ms period
 	TIM2->PSC = 8399U;
-	TIM2->ARR = 4999U;
+	TIM2->ARR = 9U;
 
 	// 3. Load prescaler
 	TIM2->EGR = (1U << 0U);
@@ -44,6 +45,7 @@ void tim2_irq_handler(void)
         TIM2->SR &= ~(1U << 0U);
 
         tim2_pending_ticks++;
+        system_ms++;
     }
 }
 
@@ -61,4 +63,9 @@ uint8_t tim2_take_tick(void)
 
     NVIC_EnableIRQ(TIM2_IRQn);
     return 1U;
+}
+
+uint32_t tim2_get_ms(void)
+{
+    return system_ms;
 }

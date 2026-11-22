@@ -11,5 +11,6 @@
 void tim2_init(void);
 void tim2_irq_handler(void);
 uint8_t tim2_take_tick(void);
+uint32_t tim2_get_ms(void);
 
 #endif /* INC_TIMER_DRIVER_H_ */
