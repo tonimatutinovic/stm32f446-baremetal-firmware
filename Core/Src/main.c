@@ -27,6 +27,9 @@
 #include "exti_driver.h"
 #include "systick_driver.h"
 #include<string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -119,6 +122,8 @@ int main(void)
 
   LedState led = {.mode = LED_MODE_OFF, .period_ms = 500U, .last_toggle_ms = 0U};
 
+  uint8_t command_overflow = 0U;
+
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -141,11 +146,14 @@ int main(void)
 	  // Handle UART received bytes
 	  if (uart2_read_available(&c) == 1U)
 	  {
-
 		  if(c == '\r' || c == '\n')
 		  {
 			  command[index] = '\0';
-			  if(index > 0U){
+			  if (command_overflow == 1U)
+			  {
+				  uart2_write_string("\r\nCommand too long\r\n");
+			  }
+			  else if(index > 0U){
 				  if(strcmp(command, "LED ON") == 0)
 				  {
 					  led.mode = LED_MODE_ON;
@@ -157,6 +165,35 @@ int main(void)
 					  led.mode = LED_MODE_OFF;
 					  gpio_reset_pin(GPIOA, 5);
 					  uart2_write_string("\r\nLED turned OFF\r\n");
+				  }
+				  else if (strncmp(command, "BLINK ", 6) == 0)
+				  {
+				      char *number_text = &command[6];
+				      char *endptr;
+
+				      errno = 0;
+				      unsigned long period = strtoul(number_text, &endptr, 10);
+
+				      if (*number_text >= '0' && *number_text <= '9' &&
+				           endptr != number_text && *endptr == '\0' &&
+				           errno != ERANGE &&
+				           period >= 50U && period <= 10000U)
+				      {
+				          led.mode = LED_MODE_BLINK;
+				          led.period_ms = (uint32_t)period;
+				          led.last_toggle_ms = tim2_get_ms();
+
+				          char response[64];
+
+				          snprintf(response, sizeof(response),
+				                   "\r\nBlinking every %lu ms\r\n", period);
+
+				          uart2_write_string(response);
+				      }
+				      else
+				      {
+				          uart2_write_string("\r\nInvalid blink period\r\n");
+				      }
 				  }
 				  else if (strcmp(command, "STATUS") == 0)
 				  {
@@ -170,39 +207,36 @@ int main(void)
 					  }
 					  else
 					  {
-						  uart2_write_string("\r\nLED is BLINKING\r\n");
+						  char response[64];
+						  snprintf(response, sizeof(response), "\r\nLED is BLINKING every %lu ms\r\n", (unsigned long)led.period_ms);
+						  uart2_write_string(response);
 					  }
-				  }
-				  else if(strcmp(command, "BLINK 500") == 0)
-				  {
-					  led.mode = LED_MODE_BLINK;
-					  led.period_ms = 500U;
-					  led.last_toggle_ms = tim2_get_ms();
-					  uart2_write_string("\r\nBlinking every 500 ms\r\n");
-				  }
-				  else if(strcmp(command, "BLINK 1000") == 0)
-				  {
-					  led.mode = LED_MODE_BLINK;
-					  led.period_ms = 1000U;
-					  led.last_toggle_ms = tim2_get_ms();
-					  uart2_write_string("\r\nBlinking every 1000 ms\r\n");
 				  }
 				  else
 				  {
 					  uart2_write_string("\r\nUnknown command!\r\n");
 				  }
+
 			  }
 
-			  index = 0;
+			  index = 0U;
+			  command_overflow = 0U;
 		  }
+
 		  else if(index < sizeof(command) - 1U)
 		  {
 			  command[index] = c;
 			  index++;
 		  }
+		  else
+		  {
+			  command_overflow = 1U;
+		  }
 
 		  uart2_write_char(c);
+
 	  }
+
 
 	  // EXTI - button press
 	  if (exti13_take_press())
