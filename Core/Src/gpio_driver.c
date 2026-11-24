@@ -100,7 +100,7 @@ uint8_t gpio_read_output(GPIO_TypeDef *port, uint8_t pin)
 {
 	if (port == 0 || pin > 15U)
 	{
-		return;
+		return 0U;
 	}
 
 	return (port->ODR & (1U << pin)) != 0U;

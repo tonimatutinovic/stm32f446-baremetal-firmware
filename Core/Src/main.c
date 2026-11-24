@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
+#include "led.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -64,19 +65,7 @@ static void MX_USART2_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-typedef enum
-  {
-	  LED_MODE_ON,
-	  LED_MODE_OFF,
-	  LED_MODE_BLINK
-  }LedMode;
 
-  typedef struct
-  {
-	  LedMode mode;
-	  uint32_t period_ms;
-	  uint32_t last_toggle_ms;
-  }LedState;
 /* USER CODE END 0 */
 
 /**
@@ -111,7 +100,7 @@ int main(void)
   // MX_USART2_UART_Init();
   /* USER CODE BEGIN 2 */
 
-  gpio_init_output(GPIOA, 5);
+  led_init();
   uart2_init();
   tim2_init();
   exti13_init();
@@ -119,8 +108,6 @@ int main(void)
   char command[16];
   int index = 0;
   char c;
-
-  LedState led = {.mode = LED_MODE_OFF, .period_ms = 500U, .last_toggle_ms = 0U};
 
   uint8_t command_overflow = 0U;
 
@@ -134,14 +121,7 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
 
-	  if(led.mode == LED_MODE_BLINK)
-	  {
-		  uint32_t now = tim2_get_ms();
-		  if((now - led.last_toggle_ms) >= led.period_ms){
-			  gpio_toggle_pin(GPIOA, 5);
-			  led.last_toggle_ms = now;
-		  }
-	  }
+	  led_update();
 
 	  // Handle UART received bytes
 	  if (uart2_read_available(&c) == 1U)
@@ -156,14 +136,12 @@ int main(void)
 			  else if(index > 0U){
 				  if(strcmp(command, "LED ON") == 0)
 				  {
-					  led.mode = LED_MODE_ON;
-					  gpio_set_pin(GPIOA, 5);
+					  led_on();
 					  uart2_write_string("\r\nLED turned ON\r\n");
 				  }
 				  else if(strcmp(command, "LED OFF") == 0)
 				  {
-					  led.mode = LED_MODE_OFF;
-					  gpio_reset_pin(GPIOA, 5);
+					  led_off();
 					  uart2_write_string("\r\nLED turned OFF\r\n");
 				  }
 				  else if (strncmp(command, "BLINK ", 6) == 0)
@@ -179,9 +157,7 @@ int main(void)
 				           errno != ERANGE &&
 				           period >= 50U && period <= 10000U)
 				      {
-				          led.mode = LED_MODE_BLINK;
-				          led.period_ms = (uint32_t)period;
-				          led.last_toggle_ms = tim2_get_ms();
+				          led_blink((uint32_t)period);
 
 				          char response[64];
 
@@ -197,18 +173,18 @@ int main(void)
 				  }
 				  else if (strcmp(command, "STATUS") == 0)
 				  {
-					  if (led.mode == LED_MODE_ON)
+					  if (led_get_mode() == LED_MODE_ON)
 					  {
 						  uart2_write_string("\r\nLED is ON\r\n");
 					  }
-					  else if (led.mode == LED_MODE_OFF)
+					  else if (led_get_mode() == LED_MODE_OFF)
 					  {
 						  uart2_write_string("\r\nLED is OFF\r\n");
 					  }
 					  else
 					  {
 						  char response[64];
-						  snprintf(response, sizeof(response), "\r\nLED is BLINKING every %lu ms\r\n", (unsigned long)led.period_ms);
+						  snprintf(response, sizeof(response), "\r\nLED is BLINKING every %lu ms\r\n", (unsigned long)led_get_period());
 						  uart2_write_string(response);
 					  }
 				  }
