@@ -26,11 +26,8 @@
 #include "timer_driver.h"
 #include "exti_driver.h"
 #include "systick_driver.h"
-#include<string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <errno.h>
 #include "led.h"
+#include "cli.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -104,12 +101,7 @@ int main(void)
   uart2_init();
   tim2_init();
   exti13_init();
-
-  char command[16];
-  int index = 0;
-  char c;
-
-  uint8_t command_overflow = 0U;
+  cli_init();
 
   /* USER CODE END 2 */
 
@@ -124,94 +116,7 @@ int main(void)
 	  led_update();
 
 	  // Handle UART received bytes
-	  if (uart2_read_available(&c) == 1U)
-	  {
-		  if(c == '\r' || c == '\n')
-		  {
-			  command[index] = '\0';
-			  if (command_overflow == 1U)
-			  {
-				  uart2_write_string("\r\nCommand too long\r\n");
-			  }
-			  else if(index > 0U){
-				  if(strcmp(command, "LED ON") == 0)
-				  {
-					  led_on();
-					  uart2_write_string("\r\nLED turned ON\r\n");
-				  }
-				  else if(strcmp(command, "LED OFF") == 0)
-				  {
-					  led_off();
-					  uart2_write_string("\r\nLED turned OFF\r\n");
-				  }
-				  else if (strncmp(command, "BLINK ", 6) == 0)
-				  {
-				      char *number_text = &command[6];
-				      char *endptr;
-
-				      errno = 0;
-				      unsigned long period = strtoul(number_text, &endptr, 10);
-
-				      if (*number_text >= '0' && *number_text <= '9' &&
-				           endptr != number_text && *endptr == '\0' &&
-				           errno != ERANGE &&
-				           period >= 50U && period <= 10000U)
-				      {
-				          led_blink((uint32_t)period);
-
-				          char response[64];
-
-				          snprintf(response, sizeof(response),
-				                   "\r\nBlinking every %lu ms\r\n", period);
-
-				          uart2_write_string(response);
-				      }
-				      else
-				      {
-				          uart2_write_string("\r\nInvalid blink period\r\n");
-				      }
-				  }
-				  else if (strcmp(command, "STATUS") == 0)
-				  {
-					  if (led_get_mode() == LED_MODE_ON)
-					  {
-						  uart2_write_string("\r\nLED is ON\r\n");
-					  }
-					  else if (led_get_mode() == LED_MODE_OFF)
-					  {
-						  uart2_write_string("\r\nLED is OFF\r\n");
-					  }
-					  else
-					  {
-						  char response[64];
-						  snprintf(response, sizeof(response), "\r\nLED is BLINKING every %lu ms\r\n", (unsigned long)led_get_period());
-						  uart2_write_string(response);
-					  }
-				  }
-				  else
-				  {
-					  uart2_write_string("\r\nUnknown command!\r\n");
-				  }
-
-			  }
-
-			  index = 0U;
-			  command_overflow = 0U;
-		  }
-
-		  else if(index < sizeof(command) - 1U)
-		  {
-			  command[index] = c;
-			  index++;
-		  }
-		  else
-		  {
-			  command_overflow = 1U;
-		  }
-
-		  uart2_write_char(c);
-
-	  }
+	  cli_process();
 
 
 	  // EXTI - button press
