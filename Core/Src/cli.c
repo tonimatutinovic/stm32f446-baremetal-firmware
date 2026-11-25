@@ -8,6 +8,7 @@
 #include "cli.h"
 #include "uart_driver.h"
 #include "led.h"
+#include "adc_driver.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -57,14 +58,24 @@ static void cli_execute_command(void) {
 			uart2_write_string("\r\nLED is ON\r\n");
 		} else if (led_get_mode() == LED_MODE_OFF) {
 			uart2_write_string("\r\nLED is OFF\r\n");
-		} else {
+		}
+		else {
 			char response[64];
 			snprintf(response, sizeof(response),
 					"\r\nLED is BLINKING every %lu ms\r\n",
 					(unsigned long) led_get_period());
 			uart2_write_string(response);
 		}
-	} else {
+	} else if (strcmp(command, "ADC READ") == 0) {
+		char response[64];
+		uint16_t adc_value = adc1_read();;
+		uint16_t adc_voltage = ((uint32_t)adc_value * 3300) / 4095;
+
+		snprintf(response, sizeof(response),
+				"\r\nADC value: %u\r\nVoltage: %u mV\r\n", (unsigned int)adc_value, (unsigned int)adc_voltage);
+
+		uart2_write_string(response);
+	}else {
 		uart2_write_string("\r\nUnknown command!\r\n");
 	}
 }

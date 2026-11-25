@@ -28,6 +28,7 @@
 #include "systick_driver.h"
 #include "led.h"
 #include "cli.h"
+#include "adc_driver.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -102,6 +103,7 @@ int main(void)
   tim2_init();
   exti13_init();
   cli_init();
+  adc1_init();
 
   /* USER CODE END 2 */
 
