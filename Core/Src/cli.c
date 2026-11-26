@@ -20,6 +20,8 @@ static char command[16];
 static uint8_t command_index = 0U;
 static uint8_t command_overflow = 0U;
 
+static uint8_t adc_pending = 0U;
+
 void cli_init(void) {
 	command_index = 0U;
 	command_overflow = 0U;
@@ -67,14 +69,15 @@ static void cli_execute_command(void) {
 			uart2_write_string(response);
 		}
 	} else if (strcmp(command, "ADC READ") == 0) {
-		char response[64];
-		uint16_t adc_value = adc1_read();;
-		uint16_t adc_voltage = ((uint32_t)adc_value * 3300) / 4095;
-
-		snprintf(response, sizeof(response),
-				"\r\nADC value: %u\r\nVoltage: %u mV\r\n", (unsigned int)adc_value, (unsigned int)adc_voltage);
-
-		uart2_write_string(response);
+		if(adc_pending == 0U)
+		{
+			adc_pending = 1U;
+			adc1_start_conversion();
+		}
+		else
+		{
+			uart2_write_string("\r\nADC busy\r\n");
+		}
 	}else {
 		uart2_write_string("\r\nUnknown command!\r\n");
 	}
@@ -104,6 +107,25 @@ void cli_process(void) {
 
 		uart2_write_char(c);
 
+	}
+
+	if(adc_pending == 1)
+	{
+		uint16_t adc_value;
+
+		if(adc1_read_available(&adc_value))
+		{
+			adc_pending = 0;
+
+			char response[64];
+
+			uint16_t adc_voltage = ((uint32_t)adc_value * 3300) / 4095;
+
+			snprintf(response, sizeof(response),
+					"\r\nADC value: %u\r\nVoltage: %u mV\r\n", (unsigned int)adc_value, (unsigned int)adc_voltage);
+
+			uart2_write_string(response);
+		}
 	}
 
 }

@@ -12,5 +12,8 @@
 
 void adc1_init(void);
 uint16_t adc1_read(void);
+void adc_irq_handler(void);
+void adc1_start_conversion(void);
+uint8_t adc1_read_available(uint16_t *value);
 
 #endif /* INC_ADC_DRIVER_H_ */

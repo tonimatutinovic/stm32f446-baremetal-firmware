@@ -8,6 +8,9 @@
 #include "stm32f4xx.h"
 #include "adc_driver.h"
 
+static volatile uint16_t adc_value = 0U;
+static volatile uint8_t adc_flag = 0U;
+
 void adc1_init(void)
 {
 	// Enable GPIOA and ADC1 peripheral clocks
@@ -48,6 +51,12 @@ void adc1_init(void)
 
 	// Enable ADC1
 	ADC1->CR2 |= (1U << 0U);
+
+	// Enable ADC interrupt
+	ADC1->CR1 |= (1U << 5U);
+
+	NVIC_SetPriority(ADC_IRQn, 3);
+	NVIC_EnableIRQ(ADC_IRQn);
 }
 
 uint16_t adc1_read(void)
@@ -60,4 +69,32 @@ uint16_t adc1_read(void)
     }
 
     return (uint16_t)ADC1->DR;;
+}
+
+void adc_irq_handler(void)
+{
+	if((ADC1->SR & (1U << 1U)) != 0U)
+	{
+		adc_value = ADC1->DR;
+		adc_flag = 1U;
+	}
+}
+
+void adc1_start_conversion(void)
+{
+	ADC1->CR2 |= (1U << 30U);
+}
+
+uint8_t adc1_read_available(uint16_t *value)
+{
+	if(adc_flag == 0U)
+	{
+		return 0U;
+	}
+
+	*value = adc_value;
+
+	adc_flag = 0U;
+
+	return 1U;
 }

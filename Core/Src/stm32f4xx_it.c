@@ -25,6 +25,7 @@
 #include "timer_driver.h"
 #include "exti_driver.h"
 #include "systick_driver.h"
+#include "adc_driver.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 /* USER CODE END Includes */
@@ -217,5 +218,10 @@ void TIM2_IRQHandler(void)
 void EXTI15_10_IRQHandler(void)
 {
     exti13_irq_handler();
+}
+
+void ADC_IRQHandler(void)
+{
+	adc_irq_handler();
 }
 /* USER CODE END 1 */
