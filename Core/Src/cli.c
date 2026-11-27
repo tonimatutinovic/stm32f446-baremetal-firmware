@@ -9,6 +9,7 @@
 #include "uart_driver.h"
 #include "led.h"
 #include "adc_driver.h"
+#include "pwm_driver.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -78,9 +79,31 @@ static void cli_execute_command(void) {
 		{
 			uart2_write_string("\r\nADC busy\r\n");
 		}
+	} else if (strncmp(command, "PWM ", 4) == 0) {
+		char *number_text = &command[4];
+		char *endptr;
+
+		errno = 0;
+		unsigned long duty_percent = strtoul(number_text, &endptr, 10);
+
+		if (*number_text >= '0' && *number_text <= '9' && endptr != number_text
+				&& *endptr == '\0' &&
+				errno != ERANGE && duty_percent <= 100U) {
+			pwm_set_duty((uint8_t)duty_percent);
+
+			char response[64];
+
+			snprintf(response, sizeof(response),
+					"\r\nPWM duty cycle: %lu%%\r\n", duty_percent);
+
+			uart2_write_string(response);
+		} else {
+			uart2_write_string("\r\nInvalid duty cycle percentage\r\n");
+		}
 	}else {
 		uart2_write_string("\r\nUnknown command!\r\n");
 	}
+
 }
 
 void cli_process(void) {

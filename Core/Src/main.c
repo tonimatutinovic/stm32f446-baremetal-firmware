@@ -29,6 +29,7 @@
 #include "led.h"
 #include "cli.h"
 #include "adc_driver.h"
+#include "pwm_driver.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -104,6 +105,7 @@ int main(void)
   exti13_init();
   cli_init();
   adc1_init();
+  pwm_init();
 
   /* USER CODE END 2 */
 
